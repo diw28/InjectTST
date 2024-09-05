@@ -54,8 +54,8 @@ class InjectTST_backbone(nn.Module):
         self.individual = individual
         self.proj = nn.Linear(self.patch_len, d_model)
         self.proj_mix = nn.Linear(self.n_vars * self.patch_len, d_model)
-        self.pe = torch.zeros((self.patch_num, d_model), requires_grad=True)
-        self.cid = torch.zeros((self.n_vars, d_model), requires_grad=True)
+        self.pe = torch.zeros((self.patch_num, d_model), requires_grad=True).cuda()
+        self.cid = torch.zeros((self.n_vars, d_model), requires_grad=True).cuda()
 
         if self.pretrain_head:
             self.head = self.create_pretrain_head(self.head_nf, c_in, fc_dropout) # custom head passed as a partial func with all its kwargs
@@ -89,11 +89,10 @@ class InjectTST_backbone(nn.Module):
         x_mix += self.pe
 
         # model
-        z_ci = torch.zeros_like(x_token, requires_grad=True)                                
+        z_ci = torch.zeros_like(x_token)                                
         z_glb = self.enc_glb(x_mix)                                                         # z_glb: [bs x patch_num x d_model]
-        for m in range(x_token.shape[1]): 
-            z_ci[:, m, ...] = self.enc_ci(x_token[:, m, ...])
-            z_ci[:, m, ...] = self.enc(z_ci[:, m, ...], z_glb, z_glb)
+        for m in range(x_token.shape[1]):
+            z_ci[:, m, ...] = self.enc(self.enc_ci(x_token[:, m, ...]), z_glb, z_glb)
         z = self.head(z_ci)                                                                 # z: [bs x nvars x target_window] 
         
         # denorm
