@@ -93,7 +93,7 @@ class InjectTST_backbone(nn.Module):
         z_glb = self.enc_glb(x_mix)                                                         # z_glb: [bs x patch_num x d_model]
         for m in range(x_token.shape[1]): 
             z_ci[:, m, ...] = self.enc_ci(x_token[:, m, ...])
-            z_ci[:, m, ...] = self.enc(z_ci, z_glb, z_glb)
+            z_ci[:, m, ...] = self.enc(z_ci[:, m, ...], z_glb, z_glb)
         z = self.head(z_ci)                                                                 # z: [bs x nvars x target_window] 
         
         # denorm
