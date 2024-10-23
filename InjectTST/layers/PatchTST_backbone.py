@@ -57,7 +57,10 @@ class PatchTST_backbone(nn.Module):
             self.head = Flatten_Head(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
         
     
-    def forward(self, z):                                                                   # z: [bs x nvars x seq_len]
+    def forward(self, z, patch_l=None):                                                     # z: [bs x nvars x seq_len]
+        if patch_l is None:
+            patch_l = self.patch_len
+        
         # norm
         if self.revin: 
             z = z.permute(0,2,1)
@@ -67,8 +70,8 @@ class PatchTST_backbone(nn.Module):
         # do patching
         if self.padding_patch == 'end':
             z = self.padding_patch_layer(z)
-        z = z.unfold(dimension=-1, size=self.patch_len, step=self.stride)                   # z: [bs x nvars x patch_num x patch_len]
-        z = z.permute(0,1,3,2)                                                              # z: [bs x nvars x patch_len x patch_num]
+        z = z.unfold(dimension=-1, size=patch_l, step=self.stride)                          # z: [bs x nvars x patch_num x patch_l]
+        z = z.permute(0,1,3,2)                                                              # z: [bs x nvars x patch_l x patch_num]
         
         # model
         z = self.backbone(z)                                                                # z: [bs x nvars x d_model x patch_num]
@@ -140,7 +143,7 @@ class TSTiEncoder(nn.Module):  #i means channel-independent
         
         # Input encoding
         q_len = patch_num
-        self.W_P = nn.Linear(patch_len, d_model)        # Eq 1: projection of feature vectors onto a d-dim vector space
+        self.W_P = nn.Linear(q_len, d_model)        # Eq 1: projection of feature vectors onto a d-dim vector space
         self.seq_len = q_len
 
         # Positional encoding

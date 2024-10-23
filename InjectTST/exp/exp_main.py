@@ -117,8 +117,12 @@ class Exp_Main(Exp_Basic):
                                             pct_start = self.args.pct_start,
                                             epochs = self.args.train_epochs,
                                             max_lr = self.args.learning_rate)
-
+        patch_l = self.args.patch_len
         for epoch in range(self.args.train_epochs):
+            if 'Patch' in self.args.model:
+                if patch_l != self.args.seq_len:
+                    patch_l = min(self.args.seq_len, patch_l * 2)
+                    print(f'update patch length to {patch_l}')
             iter_count = 0
             train_loss = []
 
@@ -140,7 +144,9 @@ class Exp_Main(Exp_Basic):
                 # encoder - decoder
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
-                        if 'Linear' in self.args.model or 'TST' in self.args.model:
+                        if 'Patch' in self.args.model:
+                            outputs = self.model(batch_x, patch_l)
+                        elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
@@ -154,7 +160,9 @@ class Exp_Main(Exp_Basic):
                         loss = criterion(outputs, batch_y)
                         train_loss.append(loss.item())
                 else:
-                    if 'Linear' in self.args.model or 'TST' in self.args.model:
+                    if 'Patch' in self.args.model:
+                        outputs = self.model(batch_x, patch_l)
+                    elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
